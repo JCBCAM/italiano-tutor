@@ -284,6 +284,11 @@
   .vbadge{font-size:11px;font-weight:700;color:var(--olive);background:var(--olive-soft);border:1px solid #DCE3CF;border-radius:99px;padding:1px 7px;margin-left:6px}
   .vtick{color:var(--terracotta);font-weight:800;flex:0 0 auto}
   .voice-empty{font-size:14px;color:var(--ink-soft);line-height:1.6;padding:10px 4px}
+  .voice-tip{display:flex;gap:11px;align-items:flex-start;background:var(--amber-bg);border:1px solid #EAD6A6;border-radius:14px;padding:13px 14px;margin-bottom:16px}
+  .voice-tip .vt-ic{font-size:20px;flex:0 0 auto;line-height:1.3}
+  .voice-tip .vt-body{font-size:13.5px;line-height:1.5;color:var(--ink);flex:1}
+  .voice-tip .vt-how{display:inline-block;margin-top:6px;background:var(--amber);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter'}
+  .voice-tip .vt-x{background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;flex:0 0 auto;line-height:1.2}
 
   canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:99px;font-size:14.5px;font-weight:600;z-index:60;transition:.35s;opacity:0}
@@ -1778,9 +1783,18 @@ const Store = (()=>{
    AUDIO (TTS) + MIC
    ===================================================================== */
 let itVoice=null;
-function pickVoice(){ const vs=speechSynthesis.getVoices(); const pref=Store.load().profile.voiceURI;
-  itVoice = (pref && vs.find(v=>v.voiceURI===pref)) || vs.find(v=>/it[-_]IT/i.test(v.lang)) || vs.find(v=>/^it/i.test(v.lang)) || null; }
-if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+const isEnh=v=>/enhanced|premium|natural|siri|neural/i.test(v.name);
+function italianVoices(){ return (speechSynthesis.getVoices()||[]).filter(v=>/^it/i.test(v.lang)); }
+function aliceVoices(){ return italianVoices().filter(v=>/alice/i.test(v.name)); }
+function pickVoice(){
+  const vs=speechSynthesis.getVoices(); const pref=Store.load().profile.voiceURI;
+  const it=italianVoices();
+  const alice=aliceVoices();
+  itVoice = (pref && vs.find(v=>v.voiceURI===pref))      // explicit user choice wins
+         || alice.find(isEnh) || it.find(isEnh)          // best: Alice Enhanced, else any enhanced
+         || alice[0] || it[0] || null;                   // else Alice, else any Italian
+}
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=()=>{ pickVoice(); if($('screenHome')&&!$('screenHome').classList.contains('hidden')) updateVoiceTip(); }; }
 function speak(text,btn,rate){ if(!('speechSynthesis' in window))return; speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text); u.lang='it-IT'; u.rate=rate||0.9; if(itVoice)u.voice=itVoice;
   if(btn){ btn.classList.add('playing'); u.onend=()=>btn.classList.remove('playing'); } speechSynthesis.speak(u); }
@@ -2222,10 +2236,11 @@ function renderHome(){
         ${HERO_SVG}
         <div class="hero-overlay">
           <div class="eyebrow">Italiano · Nuovo Espresso 1</div>
-          <h1 class="home-title">${greet}! 👋</h1>
+          <h1 class="home-title">${greet}!</h1>
           <div class="hero-sub">Pronto per un po’ d’italiano?</div>
         </div>
       </div>
+      <div id="voiceTip"></div>
       <div class="stat-strip">
         <div class="hstat"><b>${g.xp}</b><span>XP</span></div>
         <div class="hstat"><b>${g.streak.current}</b><span>day streak</span></div>
@@ -2237,6 +2252,7 @@ function renderHome(){
   $('screenHome').querySelectorAll('.lcard').forEach(c=>{ if(window.LESSONS[c.dataset.id]) c.onclick=()=>openLesson(c.dataset.id); });
   if(due>0)$('reviewBtn').onclick=startReview;
   $('hExport').onclick=doExport; $('hImport').onclick=()=>$('importFile').click(); $('hVoice').onclick=openVoicePicker;
+  updateVoiceTip();
 }
 function openLesson(id){ LESSON=window.LESSONS[id]; steps=LESSON.steps; renderIntro(LESSON); showScreen('start'); }
 function renderIntro(L){
@@ -2266,25 +2282,30 @@ function startReview(){
 }
 function doExport(){ const blob=new Blob([Store.export()],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='italiano-progress.json'; a.click(); toast('Progress exported'); }
 
+let voiceTipDismissed=false;
 function openVoicePicker(){
-  const voices=(speechSynthesis.getVoices()||[]).filter(v=>/^it/i.test(v.lang));
+  const alice=aliceVoices();
   const cur=Store.load().profile.voiceURI;
   const sample='Buongiorno! Mi chiamo Anna. Piacere.';
-  const enh=v=>/enhanced|premium|natural|siri|neural/i.test(v.name);
-  const rowsHtml = voices.length ? voices.map(v=>`
+  const hasEnh=alice.some(isEnh);
+  const rowsHtml = alice.map(v=>`
       <button class="voice-row${cur===v.voiceURI?' sel':''}" data-uri="${esc(v.voiceURI)}">
-        <span><span class="vn">${v.name}</span>${enh(v)?'<span class="vbadge">Enhanced</span>':''}<span class="vl"> ${v.lang}</span></span>
+        <span><span class="vn">${v.name}</span>${isEnh(v)?'<span class="vbadge">Enhanced</span>':''}</span>
         <span class="vtick">${cur===v.voiceURI?'✓':''}</span>
-      </button>`).join('')
-    : `<div class="voice-empty">No Italian voice is installed on this device yet.<br><br><b>On iPhone:</b> Settings → Accessibility → Spoken Content → Voices → Italian → download one marked <b>(Enhanced)</b>, then reopen this.<br><br><b>On Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Italian.</div>`;
+      </button>`).join('');
+  const lead = !alice.length
+      ? 'The <b>Alice</b> voice isn’t installed yet. To get natural Italian audio, download it:'
+      : (hasEnh ? 'The <b>Alice (Enhanced)</b> voice is installed and used automatically. Tap to hear it.'
+                : 'You have the basic <b>Alice</b> voice. For a far more natural sound, add the <b>Enhanced</b> version:');
+  const steps = (!alice.length || !hasEnh)
+      ? `<div class="voice-empty"><b>On iPhone / iPad:</b> Settings → Accessibility → Spoken Content → Voices → Italian → <b>Alice</b> → tap the download cloud and choose the <b>(Enhanced)</b> voice, then reopen the app.<br><br><b>On Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Italian → <b>Alice (Enhanced)</b>.</div>`
+      : '';
   const ov=elFrom(`<div class="modal-ov" id="voiceOv">
     <div class="modal-box">
       <div class="modal-top"><b>Voice &amp; pronunciation</b><button class="icon-btn" id="vClose">✕</button></div>
-      <div class="modal-sub">Tap a voice to hear a sample and use it. For the most natural sound, download an <b>(Enhanced)</b> Italian voice in your device settings, then come back here.</div>
-      <div class="voice-list">
-        <button class="voice-row${!cur?' sel':''}" data-uri=""><span><span class="vn">Automatic</span><span class="vl"> best available</span></span><span class="vtick">${!cur?'✓':''}</span></button>
-        ${rowsHtml}
-      </div>
+      <div class="modal-sub">${lead}</div>
+      ${alice.length?`<div class="voice-list">${rowsHtml}</div>`:''}
+      ${steps}
     </div></div>`);
   document.body.appendChild(ov);
   const close=()=>ov.remove();
@@ -2297,6 +2318,17 @@ function openVoicePicker(){
     r.classList.add('sel'); const tk=r.querySelector('.vtick'); if(tk)tk.textContent='✓';
     speak(sample);
   });
+}
+function updateVoiceTip(){
+  const el=$('voiceTip'); if(!el) return;
+  if(voiceTipDismissed || italianVoices().some(isEnh)){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="voice-tip">
+      <span class="vt-ic">🔊</span>
+      <div class="vt-body"><b>Turn on natural Italian audio.</b> Download the <b>Alice (Enhanced)</b> voice: Settings → Accessibility → Spoken Content → Voices → Italian → Alice. <button class="vt-how" id="vtHow">Show me how</button></div>
+      <button class="vt-x" id="vtX" aria-label="Dismiss">✕</button>
+    </div>`;
+  $('vtHow').onclick=openVoicePicker;
+  $('vtX').onclick=()=>{ voiceTipDismissed=true; el.innerHTML=''; };
 }
 
 /* confetti */
