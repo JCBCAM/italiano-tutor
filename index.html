@@ -1830,17 +1830,21 @@ const REGISTRY={};
 
 /* TEACH */
 REGISTRY.teach=(b,s,ctx)=>{
-  const it=s.item;
+  const it=s.item||{};
+  const head=it.it||it.verb||'';                 // verbs have no .it — use the infinitive
+  const ipa=it.ipa||'';
+  const en=it.en||'';
+  const note=it.note || (it.forms? it.forms.map(f=>`<b>${f[0]}</b> ${f[1]}`).join(' · ') : '');
   b.innerHTML=header(s,'','')+`
     <div class="teach-card">
-      <div class="word-it">${it.it}</div>
-      <div class="ipa">${it.ipa||''}</div>
-      <div class="word-en">${it.en}</div>
+      <div class="word-it">${head}</div>
+      ${ipa?`<div class="ipa">${ipa}</div>`:''}
+      ${en?`<div class="word-en">${en}</div>`:''}
       <button class="speak-btn" id="spk">${SPK}<span>Hear it</span></button>
-      ${it.note?`<div class="note"><span>💡</span><div>${it.note}</div></div>`:''}
+      ${note?`<div class="note"><span>💡</span><div>${note}</div></div>`:''}
     </div>`;
-  const spk=$('spk'); spk.onclick=()=>speak(it.it,spk);
-  setTimeout(()=>speak(it.it,spk),260);
+  const spk=$('spk'); spk.onclick=()=>speak(head,spk);
+  setTimeout(()=>speak(head,spk),260);
   ctx.setAction('Got it','primary',()=>{ctx.reward(2);ctx.advance();});
 };
 
@@ -2032,7 +2036,7 @@ REGISTRY.picture=(b,s,ctx)=>{
 
 /* SPEAK (mic, graceful) */
 REGISTRY.speak=(b,s,ctx)=>{
-  const target=s.say||s.item.it;
+  const target=s.say||(s.item&&(s.item.it||s.item.verb))||'';
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   b.innerHTML=header(s,'','Say this out loud:')+
     `<div class="mic-target">${target}</div>
