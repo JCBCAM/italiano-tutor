@@ -250,6 +250,22 @@
   .lstatus{position:absolute;top:12px;right:14px;font-size:10.5px;font-weight:700;color:var(--olive);text-transform:uppercase;letter-spacing:.04em}
   .home-foot{text-align:center;margin-top:28px;color:var(--ink-soft);font-size:13.5px}
 
+  /* ---------- voice picker modal ---------- */
+  .modal-ov{position:fixed;inset:0;background:rgba(35,32,27,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
+  .modal-box{background:var(--ivory);border-radius:20px;max-width:440px;width:100%;box-shadow:0 40px 90px -30px rgba(0,0,0,.5);padding:20px 20px 22px;max-height:82vh;display:flex;flex-direction:column}
+  .modal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .modal-top b{font-family:'Fraunces';font-size:19px;font-weight:600}
+  .modal-sub{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:14px}
+  .voice-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .voice-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;font-family:'Inter'}
+  .voice-row:hover{border-color:#D6CDBC}
+  .voice-row.sel{border-color:var(--terracotta);background:#FCEFE8}
+  .vn{font-weight:600;font-size:15px;color:var(--ink)}
+  .vl{font-size:12.5px;color:var(--ink-soft);font-weight:400}
+  .vbadge{font-size:11px;font-weight:700;color:var(--olive);background:var(--olive-soft);border:1px solid #DCE3CF;border-radius:99px;padding:1px 7px;margin-left:6px}
+  .vtick{color:var(--terracotta);font-weight:800;flex:0 0 auto}
+  .voice-empty{font-size:14px;color:var(--ink-soft);line-height:1.6;padding:10px 4px}
+
   canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:99px;font-size:14.5px;font-weight:600;z-index:60;transition:.35s;opacity:0}
   .toast.show{transform:translateX(-50%);opacity:1}
@@ -271,6 +287,7 @@
       <div class="menu hidden" id="menu">
         <button id="mExport">⬇️ <span>Export progress</span></button>
         <button id="mImport">⬆️ <span>Import progress</span></button>
+        <button id="mVoice">🔊 <span>Voice &amp; pronunciation</span></button>
         <div class="sep"></div>
         <button id="mRestart" class="danger">↻ <span>Restart this lesson</span></button>
       </div>
@@ -2161,11 +2178,11 @@ function renderHome(){
       </div>
       ${due>0?`<button class="review-card" id="reviewBtn"><div><div class="rc-title">Review due</div><div class="rc-sub">${due} word${due>1?'s':''} ready to review</div></div><div class="rc-go">→</div></button>`:''}
       <div class="lgrid">${cards}</div>
-      <div class="home-foot"><button class="ghost-link" id="hExport">Export progress</button> · <button class="ghost-link" id="hImport">Import progress</button></div>
+      <div class="home-foot"><button class="ghost-link" id="hVoice">🔊 Voice</button> · <button class="ghost-link" id="hExport">Export progress</button> · <button class="ghost-link" id="hImport">Import</button></div>
     </div>`;
   $('screenHome').querySelectorAll('.lcard').forEach(c=>{ if(window.LESSONS[c.dataset.id]) c.onclick=()=>openLesson(c.dataset.id); });
   if(due>0)$('reviewBtn').onclick=startReview;
-  $('hExport').onclick=doExport; $('hImport').onclick=()=>$('importFile').click();
+  $('hExport').onclick=doExport; $('hImport').onclick=()=>$('importFile').click(); $('hVoice').onclick=openVoicePicker;
 }
 function openLesson(id){ LESSON=window.LESSONS[id]; steps=LESSON.steps; renderIntro(LESSON); showScreen('start'); }
 function renderIntro(L){
@@ -2195,6 +2212,39 @@ function startReview(){
 }
 function doExport(){ const blob=new Blob([Store.export()],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='italiano-progress.json'; a.click(); toast('Progress exported'); }
 
+function openVoicePicker(){
+  const voices=(speechSynthesis.getVoices()||[]).filter(v=>/^it/i.test(v.lang));
+  const cur=Store.load().profile.voiceURI;
+  const sample='Buongiorno! Mi chiamo Anna. Piacere.';
+  const enh=v=>/enhanced|premium|natural|siri|neural/i.test(v.name);
+  const rowsHtml = voices.length ? voices.map(v=>`
+      <button class="voice-row${cur===v.voiceURI?' sel':''}" data-uri="${esc(v.voiceURI)}">
+        <span><span class="vn">${v.name}</span>${enh(v)?'<span class="vbadge">Enhanced</span>':''}<span class="vl"> ${v.lang}</span></span>
+        <span class="vtick">${cur===v.voiceURI?'✓':''}</span>
+      </button>`).join('')
+    : `<div class="voice-empty">No Italian voice is installed on this device yet.<br><br><b>On iPhone:</b> Settings → Accessibility → Spoken Content → Voices → Italian → download one marked <b>(Enhanced)</b>, then reopen this.<br><br><b>On Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Italian.</div>`;
+  const ov=elFrom(`<div class="modal-ov" id="voiceOv">
+    <div class="modal-box">
+      <div class="modal-top"><b>Voice &amp; pronunciation</b><button class="icon-btn" id="vClose">✕</button></div>
+      <div class="modal-sub">Tap a voice to hear a sample and use it. For the most natural sound, download an <b>(Enhanced)</b> Italian voice in your device settings, then come back here.</div>
+      <div class="voice-list">
+        <button class="voice-row${!cur?' sel':''}" data-uri=""><span><span class="vn">Automatic</span><span class="vl"> best available</span></span><span class="vtick">${!cur?'✓':''}</span></button>
+        ${rowsHtml}
+      </div>
+    </div></div>`);
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) close(); };
+  ov.querySelector('#vClose').onclick=close;
+  ov.querySelectorAll('.voice-row').forEach(r=>r.onclick=()=>{
+    const uri=r.dataset.uri||null;
+    Store.load().profile.voiceURI=uri; Store.save(); pickVoice();
+    ov.querySelectorAll('.voice-row').forEach(x=>{ x.classList.remove('sel'); const t=x.querySelector('.vtick'); if(t)t.textContent=''; });
+    r.classList.add('sel'); const tk=r.querySelector('.vtick'); if(tk)tk.textContent='✓';
+    speak(sample);
+  });
+}
+
 /* confetti */
 function launchConfetti(){ const c=$('confetti'),ctx2=c.getContext('2d'); c.width=innerWidth;c.height=innerHeight;
   const cols=['#C75B39','#D9A441','#5C6B4A','#3E7C58','#E8B04B'];
@@ -2210,6 +2260,7 @@ document.addEventListener('click',()=>$('menu').classList.add('hidden'));
 $('menu').onclick=e=>e.stopPropagation();
 $('mExport').onclick=()=>{ doExport(); $('menu').classList.add('hidden'); };
 $('mImport').onclick=()=>{ $('importFile').click(); $('menu').classList.add('hidden'); };
+$('mVoice').onclick=()=>{ $('menu').classList.add('hidden'); openVoicePicker(); };
 $('importFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ if(Store.import(r.result)){ toast('Progress imported'); refreshTop(); renderHome(); } else toast('Could not read that file'); }; r.readAsText(f); };
 $('mRestart').onclick=()=>{ if(LESSON && confirm('Restart this lesson from the beginning?')){ Store.saveLesson(LESSON.id,{stepIdx:0,status:'new'}); $('menu').classList.add('hidden'); startLesson(LESSON.id,false); } };
 
