@@ -270,7 +270,7 @@
   .rc-ic{font-size:22px;background:rgba(255,255,255,.22);width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:0 0 auto}
 
   /* ---------- voice picker modal ---------- */
-  .modal-ov{position:fixed;inset:0;background:rgba(35,32,27,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
+  .modal-ov{position:fixed;inset:0;background:rgba(35,32,27,.48);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
   .modal-box{background:var(--ivory);border-radius:20px;max-width:440px;width:100%;box-shadow:0 40px 90px -30px rgba(0,0,0,.5);padding:20px 20px 22px;max-height:82vh;display:flex;flex-direction:column}
   .modal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
   .modal-top b{font-family:'Fraunces';font-size:19px;font-weight:600}
@@ -290,7 +290,7 @@
   .voice-tip .vt-how{display:inline-block;margin-top:6px;background:var(--amber);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter'}
   .voice-tip .vt-x{background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;flex:0 0 auto;line-height:1.2}
 
-  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:99px;font-size:14.5px;font-weight:600;z-index:60;transition:.35s;opacity:0}
   .toast.show{transform:translateX(-50%);opacity:1}
   @media (max-width:480px){ .stat .lbl-text{display:none} }
@@ -2150,6 +2150,7 @@ function showScreen(name){
   $('screenComplete').classList.toggle('hidden',name!=='complete');
   $('topbar').classList.toggle('hidden',name==='home'||name==='start');
   $('footer').classList.toggle('hidden',name!=='lesson');
+  if(name!=='complete'){ const cf=$('confetti'); if(cf) cf.style.display='none'; }
 }
 
 function startLesson(id,resume){
@@ -2332,10 +2333,10 @@ function updateVoiceTip(){
 }
 
 /* confetti */
-function launchConfetti(){ const c=$('confetti'),ctx2=c.getContext('2d'); c.width=innerWidth;c.height=innerHeight;
+function launchConfetti(){ const c=$('confetti'),ctx2=c.getContext('2d'); c.width=innerWidth;c.height=innerHeight; c.style.display='block';
   const cols=['#C75B39','#D9A441','#5C6B4A','#3E7C58','#E8B04B'];
   const P=Array.from({length:140},()=>({x:innerWidth/2,y:innerHeight*0.3,vx:(Math.random()-.5)*11,vy:Math.random()*-13-4,g:.32,s:6+Math.random()*7,c:cols[Math.floor(Math.random()*cols.length)],r:Math.random()*6,vr:(Math.random()-.5)*.4}));
-  let t=0; (function loop(){ ctx2.clearRect(0,0,c.width,c.height); t++; P.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr; ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.r);ctx2.fillStyle=p.c;ctx2.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx2.restore();}); if(t<150)requestAnimationFrame(loop); else ctx2.clearRect(0,0,c.width,c.height); })(); }
+  let t=0; (function loop(){ ctx2.clearRect(0,0,c.width,c.height); t++; P.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr; ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.r);ctx2.fillStyle=p.c;ctx2.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx2.restore();}); if(t<150)requestAnimationFrame(loop); else { ctx2.clearRect(0,0,c.width,c.height); c.style.display='none'; } })(); }
 
 /* =====================================================================
    WIRING
