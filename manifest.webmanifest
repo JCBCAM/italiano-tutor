@@ -1,7 +1,7 @@
 {
-  "name": "Italiano — Nuovo Espresso 1",
+  "name": "Italiano — learn Italian",
   "short_name": "Italiano",
-  "description": "An interactive Italian tutor following Nuovo Espresso 1.",
+  "description": "An interactive Italian tutor for beginners (A1).",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
