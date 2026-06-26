@@ -284,6 +284,7 @@
   .vbadge{font-size:11px;font-weight:700;color:var(--olive);background:var(--olive-soft);border:1px solid #DCE3CF;border-radius:99px;padding:1px 7px;margin-left:6px}
   .vtick{color:var(--terracotta);font-weight:800;flex:0 0 auto}
   .voice-empty{font-size:14px;color:var(--ink-soft);line-height:1.6;padding:10px 4px}
+  .voice-note{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:14px}
   .voice-tip{display:flex;gap:11px;align-items:flex-start;background:var(--amber-bg);border:1px solid #EAD6A6;border-radius:14px;padding:13px 14px;margin-bottom:16px}
   .voice-tip .vt-ic{font-size:20px;flex:0 0 auto;line-height:1.3}
   .voice-tip .vt-body{font-size:13.5px;line-height:1.5;color:var(--ink);flex:1}
@@ -2285,28 +2286,29 @@ function doExport(){ const blob=new Blob([Store.export()],{type:'application/jso
 
 let voiceTipDismissed=false;
 function openVoicePicker(){
-  const alice=aliceVoices();
+  const seen=new Set();
+  const alice=aliceVoices().filter(v=>{ const k=(v.name||'').trim().toLowerCase(); if(seen.has(k))return false; seen.add(k); return true; });
   const cur=Store.load().profile.voiceURI;
+  const activeURI = cur || (itVoice && itVoice.voiceURI) || '';
   const sample='Buongiorno! Mi chiamo Anna. Piacere.';
   const hasEnh=alice.some(isEnh);
-  const rowsHtml = alice.map(v=>`
-      <button class="voice-row${cur===v.voiceURI?' sel':''}" data-uri="${esc(v.voiceURI)}">
-        <span><span class="vn">${v.name}</span>${isEnh(v)?'<span class="vbadge">Enhanced</span>':''}</span>
-        <span class="vtick">${cur===v.voiceURI?'✓':''}</span>
+  let body;
+  if(alice.length){
+    const rowsHtml = alice.map(v=>`
+      <button class="voice-row${v.voiceURI===activeURI?' sel':''}" data-uri="${esc(v.voiceURI)}">
+        <span class="vn">${isEnh(v)?'Alice (Enhanced)':'Alice'}</span>
+        <span class="vtick">${v.voiceURI===activeURI?'✓':''}</span>
       </button>`).join('');
-  const lead = !alice.length
-      ? 'The <b>Alice</b> voice isn’t installed yet. To get natural Italian audio, download it:'
-      : (hasEnh ? 'The <b>Alice (Enhanced)</b> voice is installed and used automatically. Tap to hear it.'
-                : 'You have the basic <b>Alice</b> voice. For a far more natural sound, add the <b>Enhanced</b> version:');
-  const steps = (!alice.length || !hasEnh)
-      ? `<div class="voice-empty"><b>On iPhone / iPad:</b> Settings → Accessibility → Spoken Content → Voices → Italian → <b>Alice</b> → tap the download cloud and choose the <b>(Enhanced)</b> voice, then reopen the app.<br><br><b>On Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Italian → <b>Alice (Enhanced)</b>.</div>`
-      : '';
+    const note = hasEnh ? '' : `<div class="voice-note">Optional: for an even more natural voice, you can add <b>Alice (Enhanced)</b> in Settings → Accessibility → Spoken Content → Voices → Italian.</div>`;
+    body = `<div class="modal-sub">Tap the button below to use the <b>Alice</b> voice for all the Italian audio.</div><div class="voice-list">${rowsHtml}</div>${note}`;
+  } else {
+    body = `<div class="modal-sub">The <b>Alice</b> voice isn’t installed yet. Here’s how to add it:</div>
+      <div class="voice-empty"><b>On iPhone / iPad:</b> Settings → Accessibility → Spoken Content → Voices → Italian → <b>Alice</b> → tap the download cloud, then reopen the app.<br><br><b>On Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Italian → <b>Alice</b>.</div>`;
+  }
   const ov=elFrom(`<div class="modal-ov" id="voiceOv">
     <div class="modal-box">
-      <div class="modal-top"><b>Voice &amp; pronunciation</b><button class="icon-btn" id="vClose">✕</button></div>
-      <div class="modal-sub">${lead}</div>
-      ${alice.length?`<div class="voice-list">${rowsHtml}</div>`:''}
-      ${steps}
+      <div class="modal-top"><b>Voice</b><button class="icon-btn" id="vClose">✕</button></div>
+      ${body}
     </div></div>`);
   document.body.appendChild(ov);
   const close=()=>ov.remove();
@@ -2317,15 +2319,15 @@ function openVoicePicker(){
     Store.load().profile.voiceURI=uri; Store.save(); pickVoice();
     ov.querySelectorAll('.voice-row').forEach(x=>{ x.classList.remove('sel'); const t=x.querySelector('.vtick'); if(t)t.textContent=''; });
     r.classList.add('sel'); const tk=r.querySelector('.vtick'); if(tk)tk.textContent='✓';
-    speak(sample);
+    speak(sample); toast('Voice set to Alice');
   });
 }
 function updateVoiceTip(){
   const el=$('voiceTip'); if(!el) return;
-  if(voiceTipDismissed || italianVoices().some(isEnh)){ el.innerHTML=''; return; }
+  if(voiceTipDismissed || aliceVoices().length){ el.innerHTML=''; return; }
   el.innerHTML=`<div class="voice-tip">
       <span class="vt-ic">🔊</span>
-      <div class="vt-body"><b>Turn on natural Italian audio.</b> Download the <b>Alice (Enhanced)</b> voice: Settings → Accessibility → Spoken Content → Voices → Italian → Alice. <button class="vt-how" id="vtHow">Show me how</button></div>
+      <div class="vt-body"><b>Turn on Italian audio.</b> Add the <b>Alice</b> voice: Settings → Accessibility → Spoken Content → Voices → Italian → Alice. <button class="vt-how" id="vtHow">Show me how</button></div>
       <button class="vt-x" id="vtX" aria-label="Dismiss">✕</button>
     </div>`;
   $('vtHow').onclick=openVoicePicker;
