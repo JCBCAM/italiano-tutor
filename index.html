@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#C75B39" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Italiano" />
 <style>
   :root{
     --ivory:#FBF7EF; --paper:#FFFFFF; --ink:#23201B; --ink-soft:#6B635A; --line:#E9E1D3;
@@ -240,7 +249,7 @@
   .lcard:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#DCD2C0}
   .lcard.locked{opacity:.6;cursor:default;filter:grayscale(.25)}
   .lcard.locked:hover{transform:none;box-shadow:var(--shadow-sm);border-color:var(--line)}
-  .lnum{flex:0 0 auto;width:42px;height:42px;border-radius:12px;background:var(--ivory);border:1px solid var(--line);display:grid;place-items:center;font-family:'Fraunces';font-weight:600;font-size:20px;color:var(--terracotta)}
+  .lnum{flex:0 0 auto;width:46px;height:46px;border-radius:13px;background:var(--ivory);display:grid;place-items:center;font-size:24px;line-height:1}
   .lbody{flex:1;min-width:0}
   .ltitle{font-family:'Fraunces';font-weight:600;font-size:18px;letter-spacing:-.01em}
   .lsub{font-size:13px;color:var(--ink-soft);margin-top:1px}
@@ -249,6 +258,16 @@
   .lsoon{font-size:12px;color:var(--ink-soft);margin-top:7px;font-style:italic}
   .lstatus{position:absolute;top:12px;right:14px;font-size:10.5px;font-weight:700;color:var(--olive);text-transform:uppercase;letter-spacing:.04em}
   .home-foot{text-align:center;margin-top:28px;color:var(--ink-soft);font-size:13.5px}
+  /* hero illustration */
+  .hero{position:relative;border-radius:20px;overflow:hidden;margin-bottom:14px;border:1px solid var(--line);box-shadow:var(--shadow-sm);height:clamp(158px,42vw,205px)}
+  .hero svg{position:absolute;inset:0;width:100%;height:100%}
+  .hero-overlay{position:absolute;left:clamp(18px,5vw,30px);top:clamp(16px,9%,28px);max-width:60%}
+  .hero-overlay .eyebrow{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--terracotta);font-weight:700}
+  .hero-overlay .home-title{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(24px,6vw,38px);letter-spacing:-.02em;margin-top:5px;color:var(--ink);line-height:1.04}
+  .hero-sub{font-size:clamp(12.5px,2.6vw,15px);color:var(--ink-soft);margin-top:6px}
+  .stat-strip{display:flex;gap:12px;margin-bottom:20px}
+  .stat-strip .hstat{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:12px}
+  .rc-ic{font-size:22px;background:rgba(255,255,255,.22);width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:0 0 auto}
 
   /* ---------- voice picker modal ---------- */
   .modal-ov{position:fixed;inset:0;background:rgba(35,32,27,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
@@ -2155,28 +2174,63 @@ function finishLesson(){
   launchConfetti();
 }
 
+const HERO_SVG=`
+<svg viewBox="0 0 680 220" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A sunny Tuscan landscape">
+ <defs><linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFE3"/><stop offset="1" stop-color="#F7DEC8"/></linearGradient></defs>
+ <rect width="680" height="220" fill="url(#hsky)"/>
+ <g stroke="#CBAB8E" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M64 46 q7 -7 14 0 q7 -7 14 0"/><path d="M118 62 q5 -5 10 0 q5 -5 10 0"/></g>
+ <g transform="translate(486,64)">
+   <g stroke="#E8B04B" stroke-width="4.5" stroke-linecap="round">
+     <line x1="40" y1="0" x2="52" y2="0"/><line x1="-40" y1="0" x2="-52" y2="0"/>
+     <line x1="0" y1="40" x2="0" y2="52"/><line x1="0" y1="-40" x2="0" y2="-52"/>
+     <line x1="28.3" y1="28.3" x2="36.8" y2="36.8"/><line x1="-28.3" y1="-28.3" x2="-36.8" y2="-36.8"/>
+     <line x1="28.3" y1="-28.3" x2="36.8" y2="-36.8"/><line x1="-28.3" y1="28.3" x2="-36.8" y2="36.8"/>
+   </g>
+   <circle r="31" fill="#E8B04B"/>
+   <circle cx="-11" cy="-5" r="3.4" fill="#C75B39"/><circle cx="11" cy="-5" r="3.4" fill="#C75B39"/>
+   <path d="M-12 7 Q0 18 12 7" fill="none" stroke="#C75B39" stroke-width="3.6" stroke-linecap="round"/>
+ </g>
+ <path d="M0 168 Q150 128 330 158 Q500 184 680 150 L680 220 L0 220 Z" fill="#CBD6AC"/>
+ <path d="M0 188 Q190 152 400 182 Q560 204 680 178 L680 220 L0 220 Z" fill="#9FB67C"/>
+ <path d="M0 206 Q160 184 360 202 Q520 216 680 198 L680 220 L0 220 Z" fill="#6E8654"/>
+ <g transform="translate(404,150)"><path d="M-4 2 L15 -13 L34 2 Z" fill="#C75B39"/><rect x="0" y="2" width="30" height="22" rx="2" fill="#FBF7EF"/><rect x="11" y="11" width="8" height="13" fill="#C2916A"/></g>
+ <g fill="#4C5E3C">
+   <path d="M150 198 q-7 -2 -7 -27 q0 -23 7 -35 q7 12 7 35 q0 25 -7 27 Z"/>
+   <path d="M540 192 q-6 -2 -6 -23 q0 -20 6 -31 q6 11 6 31 q0 21 -6 23 Z"/>
+   <path d="M250 204 q-5 -2 -5 -19 q0 -16 5 -25 q5 9 5 25 q0 17 -5 19 Z"/>
+ </g>
+</svg>`;
 function renderHome(){
   const g=Store.load().global; const due=Store.dueItems().length;
+  const TH={l1:'#C75B39',l2:'#3E6C7C',l3:'#B07A1E',l4:'#5C6B4A',l5:'#7C5C6B',l6:'#C24E78',l7:'#2C8C7A',l8:'#4E79A8',l9:'#C0492E',l10:'#6B5CA5'};
+  const EMO={l1:'👋',l2:'🧑‍🤝‍🧑',l3:'☕',l4:'⏰',l5:'🛎️',l6:'🎉',l7:'🗺️',l8:'⛅',l9:'🍅',l10:'👪'};
   const cards=MANIFEST.map(m=>{
     const loaded=!!window.LESSONS[m.id]; const l=Store.lesson(m.id);
     const mastery=loaded?Math.round(100*Store.lessonMastery(window.LESSONS[m.id])):0;
     const status=l.status==='passed'?'Done':((l.stepIdx||0)>0?'In progress':'');
+    const c=TH[m.id]||'#C75B39';
     return `<button class="lcard ${loaded?'':'locked'}" data-id="${m.id}">
-      <div class="lnum">${m.n}</div>
-      <div class="lbody"><div class="ltitle">${m.title}</div><div class="lsub">${m.sub}</div>
-        ${loaded?`<div class="lbar"><div style="width:${mastery}%"></div></div>`:`<div class="lsoon">Coming soon</div>`}</div>
-      ${status?`<div class="lstatus">${status}</div>`:''}</button>`;
+      <div class="lnum" style="background:${c}1a;color:${c}">${loaded?EMO[m.id]:'🔒'}</div>
+      <div class="lbody"><div class="ltitle">${m.title}</div><div class="lsub">Lezione ${m.n} · ${m.sub}</div>
+        ${loaded?`<div class="lbar"><div style="width:${mastery}%;background:${c}"></div></div>`:`<div class="lsoon">Coming soon</div>`}</div>
+      ${status?`<div class="lstatus" style="color:${c}">${status}</div>`:''}</button>`;
   }).join('');
+  const hr=new Date().getHours(); const greet=hr<13?'Buongiorno':hr<18?'Buon pomeriggio':'Buonasera';
   $('screenHome').innerHTML=`
     <div class="home">
-      <div class="home-head">
-        <div><div class="eyebrow">Italiano · Nuovo Espresso 1</div><h1 class="home-title">Le lezioni</h1></div>
-        <div class="home-stats">
-          <div class="hstat"><b>${g.xp}</b><span>XP</span></div>
-          <div class="hstat"><b>${g.streak.current}</b><span>streak</span></div>
+      <div class="hero">
+        ${HERO_SVG}
+        <div class="hero-overlay">
+          <div class="eyebrow">Italiano · Nuovo Espresso 1</div>
+          <h1 class="home-title">${greet}! 👋</h1>
+          <div class="hero-sub">Pronto per un po’ d’italiano?</div>
         </div>
       </div>
-      ${due>0?`<button class="review-card" id="reviewBtn"><div><div class="rc-title">Review due</div><div class="rc-sub">${due} word${due>1?'s':''} ready to review</div></div><div class="rc-go">→</div></button>`:''}
+      <div class="stat-strip">
+        <div class="hstat"><b>${g.xp}</b><span>XP</span></div>
+        <div class="hstat"><b>${g.streak.current}</b><span>day streak</span></div>
+      </div>
+      ${due>0?`<button class="review-card" id="reviewBtn"><div class="rc-ic">🔁</div><div style="flex:1"><div class="rc-title">Review due</div><div class="rc-sub">${due} word${due>1?'s':''} ready to review</div></div><div class="rc-go">→</div></button>`:''}
       <div class="lgrid">${cards}</div>
       <div class="home-foot"><button class="ghost-link" id="hVoice">🔊 Voice</button> · <button class="ghost-link" id="hExport">Export progress</button> · <button class="ghost-link" id="hImport">Import</button></div>
     </div>`;
