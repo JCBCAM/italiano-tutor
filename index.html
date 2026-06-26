@@ -285,6 +285,11 @@
   .vtick{color:var(--terracotta);font-weight:800;flex:0 0 auto}
   .voice-empty{font-size:14px;color:var(--ink-soft);line-height:1.6;padding:10px 4px}
   .voice-note{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:14px}
+  .install-tip{display:flex;gap:11px;align-items:center;background:#FCEFE8;border:1px solid #EAD2C6;border-radius:14px;padding:13px 14px;margin-bottom:16px}
+  .install-tip .it-ic{font-size:20px;flex:0 0 auto;line-height:1}
+  .install-tip .it-body{font-size:13.5px;line-height:1.5;color:var(--ink);flex:1}
+  .install-tip .it-cta{background:var(--terracotta);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:'Inter';flex:0 0 auto}
+  .install-tip .it-x{background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;flex:0 0 auto;line-height:1}
   .voice-tip{display:flex;gap:11px;align-items:flex-start;background:var(--amber-bg);border:1px solid #EAD6A6;border-radius:14px;padding:13px 14px;margin-bottom:16px}
   .voice-tip .vt-ic{font-size:20px;flex:0 0 auto;line-height:1.3}
   .voice-tip .vt-body{font-size:13.5px;line-height:1.5;color:var(--ink);flex:1}
@@ -2242,6 +2247,7 @@ function renderHome(){
           <div class="hero-sub">Pronto per un po’ d’italiano?</div>
         </div>
       </div>
+      <div id="installTip"></div>
       <div id="voiceTip"></div>
       <div class="stat-strip">
         <div class="hstat"><b>${g.xp}</b><span>XP</span></div>
@@ -2254,7 +2260,7 @@ function renderHome(){
   $('screenHome').querySelectorAll('.lcard').forEach(c=>{ if(window.LESSONS[c.dataset.id]) c.onclick=()=>openLesson(c.dataset.id); });
   if(due>0)$('reviewBtn').onclick=startReview;
   $('hExport').onclick=doExport; $('hImport').onclick=()=>$('importFile').click(); $('hVoice').onclick=openVoicePicker;
-  updateVoiceTip();
+  updateVoiceTip(); updateInstallTip();
 }
 function openLesson(id){ LESSON=window.LESSONS[id]; steps=LESSON.steps; renderIntro(LESSON); showScreen('start'); }
 function renderIntro(L){
@@ -2332,6 +2338,31 @@ function updateVoiceTip(){
     </div>`;
   $('vtHow').onclick=openVoicePicker;
   $('vtX').onclick=()=>{ voiceTipDismissed=true; el.innerHTML=''; };
+}
+
+/* ---- Add to Home Screen prompt ---- */
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredInstall=e; if($('screenHome')&&!$('screenHome').classList.contains('hidden')) updateInstallTip(); });
+window.addEventListener('appinstalled', ()=>{ deferredInstall=null; const m=Store.load(); m.profile.installDismissed=true; Store.save(); updateInstallTip(); });
+function isStandalone(){ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true; }
+const SHARE_SVG='<svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin:0 1px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M6 11v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-7"/></svg>';
+function updateInstallTip(){
+  const el=$('installTip'); if(!el) return;
+  if(Store.load().profile.installDismissed || isStandalone()){ el.innerHTML=''; return; }
+  const ua=navigator.userAgent||'';
+  const iOS=/iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints>1);
+  if(deferredInstall){
+    el.innerHTML=`<div class="install-tip"><span class="it-ic">📲</span>
+      <div class="it-body"><b>Add Italiano to your home screen</b> — one tap to open it full-screen, like an app.</div>
+      <button class="it-cta" id="itAdd">Add</button>
+      <button class="it-x" id="itX" aria-label="Dismiss">✕</button></div>`;
+    $('itAdd').onclick=async()=>{ try{ deferredInstall.prompt(); await deferredInstall.userChoice; }catch(e){} deferredInstall=null; el.innerHTML=''; };
+  } else if(iOS){
+    el.innerHTML=`<div class="install-tip"><span class="it-ic">📲</span>
+      <div class="it-body"><b>Add Italiano to your home screen.</b> Tap the Share button ${SHARE_SVG} in Safari’s toolbar, then choose <b>“Add to Home Screen.”</b></div>
+      <button class="it-x" id="itX" aria-label="Dismiss">✕</button></div>`;
+  } else { el.innerHTML=''; return; }
+  const x=$('itX'); if(x) x.onclick=()=>{ const m=Store.load(); m.profile.installDismissed=true; Store.save(); el.innerHTML=''; };
 }
 
 /* confetti */
